@@ -35,8 +35,8 @@ def load_vgg(sess, vgg_path):
     vgg_layer7_out_tensor_name = 'layer7_out:0'
 
     # here's where we load and initialise our vgg transfer model
-    tf.saved_model.loader.load(sess, [vgg_tag, vgg_path])
-    graph = tf.get_default_graph()graph = tf.get_default_graph()
+    tf.saved_model.loader.load(sess, [vgg_tag], vgg_path)
+    graph = tf.get_default_graph()
     w1 = graph.get_tensor_by_name(vgg_input_tensor_name)
     kp = graph.get_tensor_by_name(vgg_keep_prob_tensor_name)
     w3 = graph.get_tensor_by_name(vgg_layer3_out_tensor_name)
