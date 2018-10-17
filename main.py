@@ -37,13 +37,13 @@ def load_vgg(sess, vgg_path):
     # here's where we load and initialise our vgg transfer model
     tf.saved_model.loader.load(sess, [vgg_tag], vgg_path)
     graph = tf.get_default_graph()
-    w1 = graph.get_tensor_by_name(vgg_input_tensor_name)
+    image_input = graph.get_tensor_by_name(vgg_input_tensor_name)
     kp = graph.get_tensor_by_name(vgg_keep_prob_tensor_name)
     w3 = graph.get_tensor_by_name(vgg_layer3_out_tensor_name)
     w4 = graph.get_tensor_by_name(vgg_layer4_out_tensor_name)
     w7 = graph.get_tensor_by_name(vgg_layer7_out_tensor_name)
     
-    return w1, kp, w3, w4, w7
+    return image_input, kp, w3, w4, w7
 tests.test_load_vgg(load_vgg, tf)
 
 
@@ -114,6 +114,7 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
     KP = 0.5
     LR = 1e-4
     # TODO: Implement function
+    print("starting to train over {} epochs".format(epochs))
     for epoch in range(epochs):
         for image, targets in get_batches_fn(batch_size):
             _, loss = sess.run([train_op, cross_entropy_loss], 
@@ -127,8 +128,8 @@ tests.test_train_nn(train_nn)
 def run():
     num_classes = 2
     image_shape = (160, 576)
-    epochs = 25
-    batch_size = 8
+    epochs = 5
+    batch_size = 2
     data_dir = './data'
     runs_dir = './runs'
     tests.test_for_kitti_dataset(data_dir)
@@ -150,7 +151,7 @@ def run():
         #  https://datascience.stackexchange.com/questions/5224/how-to-prepare-augment-images-for-neural-network
 
         # TODO: Build NN using load_vgg, layers, and optimize function
-        input, keep_prob, layer3, layer4, layer7 = load_vgg(sess, vgg_path)
+        input_image, keep_prob, layer3, layer4, layer7 = load_vgg(sess, vgg_path)
         output = layers(layer3, layer4, layer7, num_classes)
         correct_label = tf.placeholder(dtype = tf.float32, shape = (None, None, None, num_classes))
         learning_rate = tf.placeholder(dtype = tf.float32)
@@ -159,7 +160,7 @@ def run():
         # TODO: Train NN using the train_nn function
         tf.set_random_seed(42)
         sess.run(tf.global_variables_initializer())
-        train_nn(sess, epochs, batch_size, get_batches_fn, train_op, x_entropy, input, correct_label, keep_prob, learning_rate)
+        train_nn(sess, epochs, batch_size, get_batches_fn, train_op, x_entropy, input_image, correct_label, keep_prob, learning_rate)
 
         # TODO: Save inference data using helper.save_inference_samples
         helper.save_inference_samples(runs_dir, data_dir, sess, image_shape, logits, keep_prob, input_image)
