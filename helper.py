@@ -58,6 +58,12 @@ def maybe_download_pretrained_vgg(data_dir):
         os.remove(os.path.join(vgg_path, vgg_filename))
 
 
+def normalise(img):
+    lmin = float(img.min())
+    lmax = float(img.max())
+    return np.floor((img-lmin)/(lmax-lmin)*255.)
+
+
 def gen_batch_function(data_folder, image_shape):
     """
     Generate function to create batches of training data
@@ -87,6 +93,10 @@ def gen_batch_function(data_folder, image_shape):
                 image = scipy.misc.imresize(scipy.misc.imread(image_file), image_shape)
                 gt_image = scipy.misc.imresize(scipy.misc.imread(gt_image_file), image_shape)
 
+                # normalise the images
+                image = normalise(image)
+                gt_image = normalise(image)
+
                 gt_bg = np.all(gt_image == background_color, axis=2)
                 gt_bg = gt_bg.reshape(*gt_bg.shape, 1)
                 gt_image = np.concatenate((gt_bg, np.invert(gt_bg)), axis=2)
@@ -111,6 +121,9 @@ def gen_test_output(sess, logits, keep_prob, image_pl, data_folder, image_shape)
     """
     for image_file in glob(os.path.join(data_folder, 'image_2', '*.png')):
         image = scipy.misc.imresize(scipy.misc.imread(image_file), image_shape)
+
+        # should pre-process as per training
+        image = normalise(image)
 
         im_softmax = sess.run(
             [tf.nn.softmax(logits)],

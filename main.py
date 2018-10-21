@@ -59,16 +59,35 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
     # TODO: Implement function
 
     # create 1 by 1 layers
-    l7_11 = tf.layers.conv2d(vgg_layer7_out, num_classes, 1, strides=(1, 1), kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
-    l4_11 = tf.layers.conv2d(vgg_layer4_out, num_classes, 1, strides=(1, 1), padding='same', kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
-    l3_11 = tf.layers.conv2d(vgg_layer3_out, num_classes, 1, strides=(1, 1), padding='same', kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
+    l7_11 = tf.layers.conv2d(vgg_layer7_out, num_classes, 1, strides=(1, 1), 
+                             kernel_initializer=tf.random_normal_initializer(stddev=1e-3), 
+                             kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-5))
+
+    pool4_out_scaled = tf.multiply(vgg_layer4_out, 0.01, name='pool4_out_scaled')
+    l4_11 = tf.layers.conv2d(pool4_out_scaled, num_classes, 1, strides=(1, 1), padding='same', 
+                             kernel_initializer=tf.random_normal_initializer(stddev=1e-3),
+                             kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-5))
+
+    pool3_out_scaled = tf.multiply(vgg_layer3_out, 0.0001, name='pool3_out_scaled')
+    l3_11 = tf.layers.conv2d(pool3_out_scaled, num_classes, 1, strides=(1, 1), padding='same', 
+                             kernel_initializer=tf.random_normal_initializer(stddev=1e-3),
+                             kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-5))
 
     # transpose (upsample) and add in turn
-    output = tf.layers.conv2d_transpose(l7_11, num_classes, 4, strides=(2, 2), padding='same',kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
+    output = tf.layers.conv2d_transpose(l7_11, num_classes, 4, strides=(2, 2), padding='same',
+                                        kernel_initializer=tf.random_normal_initializer(stddev=1e-3),
+                                        kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-5))
     output = tf.add(output, l4_11)
-    output = tf.layers.conv2d_transpose(output, num_classes, 4, strides=(2, 2), padding='same', kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
+
+    output = tf.layers.conv2d_transpose(output, num_classes, 4, strides=(2, 2), padding='same', 
+                                        kernel_initializer=tf.random_normal_initializer(stddev=1e-3),
+                                        kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-5))
     output = tf.add(output, l3_11)
-    output = tf.layers.conv2d_transpose(output, num_classes, 16, strides=(8, 8), padding='same', kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
+
+    output = tf.layers.conv2d_transpose(output, num_classes, 16, strides=(8, 8), padding='same', 
+                                        kernel_initializer=tf.random_normal_initializer(stddev=1e-3),
+                                        kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-5))
+
     return output
 tests.test_layers(layers)
 
@@ -89,7 +108,8 @@ def optimize(nn_last_layer, correct_label, learning_rate, num_classes):
     labels = tf.reshape(correct_label, (-1, num_classes))
 
     # define losses and optimiser
-    x_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=labels))
+    reg_losses = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
+    x_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=labels)) + sum(reg_losses)
     train_op = tf.train.AdamOptimizer(learning_rate).minimize(x_entropy)
 
     return logits, train_op, x_entropy
@@ -128,8 +148,8 @@ tests.test_train_nn(train_nn)
 def run():
     num_classes = 2
     image_shape = (160, 576)
-    epochs = 5
-    batch_size = 2
+    epochs = 25
+    batch_size = 16
     data_dir = './data'
     runs_dir = './runs'
     tests.test_for_kitti_dataset(data_dir)
@@ -160,7 +180,9 @@ def run():
         # TODO: Train NN using the train_nn function
         tf.set_random_seed(42)
         sess.run(tf.global_variables_initializer())
+        saver = tf.train.Saver()
         train_nn(sess, epochs, batch_size, get_batches_fn, train_op, x_entropy, input_image, correct_label, keep_prob, learning_rate)
+        saver.save(sess, 'model/bartlebooth-fcn')
 
         # TODO: Save inference data using helper.save_inference_samples
         helper.save_inference_samples(runs_dir, data_dir, sess, image_shape, logits, keep_prob, input_image)
