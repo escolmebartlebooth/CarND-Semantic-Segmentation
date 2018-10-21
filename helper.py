@@ -93,9 +93,8 @@ def gen_batch_function(data_folder, image_shape):
                 image = scipy.misc.imresize(scipy.misc.imread(image_file), image_shape)
                 gt_image = scipy.misc.imresize(scipy.misc.imread(gt_image_file), image_shape)
 
-                # normalise the images
+                # normalise the image
                 image = normalise(image)
-                gt_image = normalise(image)
 
                 gt_bg = np.all(gt_image == background_color, axis=2)
                 gt_bg = gt_bg.reshape(*gt_bg.shape, 1)
@@ -123,11 +122,11 @@ def gen_test_output(sess, logits, keep_prob, image_pl, data_folder, image_shape)
         image = scipy.misc.imresize(scipy.misc.imread(image_file), image_shape)
 
         # should pre-process as per training
-        image = normalise(image)
+        image_norm = normalise(image)
 
         im_softmax = sess.run(
             [tf.nn.softmax(logits)],
-            {keep_prob: 1.0, image_pl: [image]})
+            {keep_prob: 1.0, image_pl: [image_norm]})
         im_softmax = im_softmax[0][:, 1].reshape(image_shape[0], image_shape[1])
         segmentation = (im_softmax > 0.5).reshape(image_shape[0], image_shape[1], 1)
         mask = np.dot(segmentation, np.array([[0, 255, 0, 127]]))
