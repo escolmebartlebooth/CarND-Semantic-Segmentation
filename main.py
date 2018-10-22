@@ -86,7 +86,7 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
 
     output = tf.layers.conv2d_transpose(output, num_classes, 16, strides=(8, 8), padding='same', 
                                         kernel_initializer=tf.random_normal_initializer(stddev=1e-3),
-                                        kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-5))
+                                        kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-5), name='final_layer')
 
     return output
 tests.test_layers(layers)
