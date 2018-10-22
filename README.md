@@ -36,9 +36,19 @@ Download the [Kitti Road dataset](http://www.cvlibs.net/datasets/kitti/eval_road
 
 #### The data
 
+TO DO: Show GT, Image and discuss the data
 
 #### main.py to create the base FCN for the Kitti Road Dataset
 
+TO DO: Load VGG
+
+TO DO: Layers
+
+TO DO: Optimize
+
+TO DO: TRAIN
+
+TO DO: Loss during training, params {kp, batch, epoch, reg, init, l rate}
 
 #### Updating helper.py to pre-process the Kitti Road Dataset Images
 
