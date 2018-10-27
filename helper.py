@@ -61,7 +61,7 @@ def maybe_download_pretrained_vgg(data_dir):
 def normalise(img):
     lmin = float(img.min())
     lmax = float(img.max())
-    return np.floor((img-lmin)/(lmax-lmin)*255.)
+    return img #np.floor((img-lmin)/(lmax-lmin)*255.)
 
 
 def gen_batch_function(data_folder, image_shape):

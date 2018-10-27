@@ -6,6 +6,13 @@ import warnings
 from distutils.version import LooseVersion
 import project_tests as tests
 
+# set some hyper-parameters up here
+LEARN_RATE = 5e-4
+KEEP_PROB = 0.5
+L2_REG = 1e-5
+INIT_STD = 1e-2
+BATCH_SIZE = 8
+EPOCHS = 50
 
 # Check TensorFlow Version
 assert LooseVersion(tf.__version__) >= LooseVersion('1.0'), 'Please use TensorFlow version 1.0 or newer.  You are using {}'.format(tf.__version__)
@@ -60,33 +67,33 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
 
     # create 1 by 1 layers
     l7_11 = tf.layers.conv2d(vgg_layer7_out, num_classes, 1, strides=(1, 1), 
-                             kernel_initializer=tf.random_normal_initializer(stddev=1e-3), 
-                             kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-5))
+                             kernel_initializer=tf.random_normal_initializer(stddev=INIT_STD), 
+                             kernel_regularizer=tf.contrib.layers.l2_regularizer(L2_REG))
 
     pool4_out_scaled = tf.multiply(vgg_layer4_out, 0.01, name='pool4_out_scaled')
     l4_11 = tf.layers.conv2d(pool4_out_scaled, num_classes, 1, strides=(1, 1), padding='same', 
-                             kernel_initializer=tf.random_normal_initializer(stddev=1e-3),
-                             kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-5))
+                             kernel_initializer=tf.random_normal_initializer(stddev=INIT_STD),
+                             kernel_regularizer=tf.contrib.layers.l2_regularizer(L2_REG))
 
     pool3_out_scaled = tf.multiply(vgg_layer3_out, 0.0001, name='pool3_out_scaled')
     l3_11 = tf.layers.conv2d(pool3_out_scaled, num_classes, 1, strides=(1, 1), padding='same', 
-                             kernel_initializer=tf.random_normal_initializer(stddev=1e-3),
-                             kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-5))
+                             kernel_initializer=tf.random_normal_initializer(stddev=INIT_STD),
+                             kernel_regularizer=tf.contrib.layers.l2_regularizer(L2_REG))
 
     # transpose (upsample) and add in turn
     output = tf.layers.conv2d_transpose(l7_11, num_classes, 4, strides=(2, 2), padding='same',
-                                        kernel_initializer=tf.random_normal_initializer(stddev=1e-3),
-                                        kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-5))
+                                        kernel_initializer=tf.random_normal_initializer(stddev=INIT_STD),
+                                        kernel_regularizer=tf.contrib.layers.l2_regularizer(L2_REG))
     output = tf.add(output, l4_11)
 
     output = tf.layers.conv2d_transpose(output, num_classes, 4, strides=(2, 2), padding='same', 
-                                        kernel_initializer=tf.random_normal_initializer(stddev=1e-3),
-                                        kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-5))
+                                        kernel_initializer=tf.random_normal_initializer(stddev=INIT_STD),
+                                        kernel_regularizer=tf.contrib.layers.l2_regularizer(L2_REG))
     output = tf.add(output, l3_11)
 
     output = tf.layers.conv2d_transpose(output, num_classes, 16, strides=(8, 8), padding='same', 
-                                        kernel_initializer=tf.random_normal_initializer(stddev=1e-3),
-                                        kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-5), name='final_layer')
+                                        kernel_initializer=tf.random_normal_initializer(stddev=INIT_STD),
+                                        kernel_regularizer=tf.contrib.layers.l2_regularizer(L2_REG), name='final_layer')
 
     return output
 tests.test_layers(layers)
@@ -104,7 +111,7 @@ def optimize(nn_last_layer, correct_label, learning_rate, num_classes):
     # TODO: Implement function
 
     # reshape to 2d - check whether necessary
-    logits = tf.reshape(nn_last_layer, (-1, num_classes))
+    logits = tf.reshape(nn_last_layer, (-1, num_classes), name="logits")
     labels = tf.reshape(correct_label, (-1, num_classes))
 
     # define losses and optimiser
@@ -131,15 +138,14 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
     :param keep_prob: TF Placeholder for dropout keep probability
     :param learning_rate: TF Placeholder for learning rate
     """
-    KP = 0.5
-    LR = 1e-4
+
     # TODO: Implement function
     print("starting to train over {} epochs".format(epochs))
-    for epoch in range(epochs):
-        for image, targets in get_batches_fn(batch_size):
+    for epoch in range(EPOCHS):
+        for image, targets in get_batches_fn(BATCH_SIZE):
             _, loss = sess.run([train_op, cross_entropy_loss], 
-                feed_dict = {input_image: image, correct_label: targets, keep_prob: KP,
-                             learning_rate: LR })
+                feed_dict = {input_image: image, correct_label: targets, keep_prob: KEEP_PROB,
+                             learning_rate: LEARN_RATE })
         # Print data on the learning process
         print("Epoch: {}".format(epoch + 1), "/ {}".format(epochs), " Loss: {:.3f}".format(loss))
 tests.test_train_nn(train_nn)
@@ -148,8 +154,6 @@ tests.test_train_nn(train_nn)
 def run():
     num_classes = 2
     image_shape = (160, 576)
-    epochs = 25
-    batch_size = 16
     data_dir = './data'
     runs_dir = './runs'
     tests.test_for_kitti_dataset(data_dir)
@@ -181,7 +185,7 @@ def run():
         tf.set_random_seed(42)
         sess.run(tf.global_variables_initializer())
         saver = tf.train.Saver()
-        train_nn(sess, epochs, batch_size, get_batches_fn, train_op, x_entropy, input_image, correct_label, keep_prob, learning_rate)
+        train_nn(sess, EPOCHS, BATCH_SIZE, get_batches_fn, train_op, x_entropy, input_image, correct_label, keep_prob, learning_rate)
         saver.save(sess, 'model/bartlebooth-fcn')
 
         # TODO: Save inference data using helper.save_inference_samples
