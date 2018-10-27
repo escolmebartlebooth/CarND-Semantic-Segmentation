@@ -41,9 +41,9 @@ Download the [Kitti Road dataset](http://www.cvlibs.net/datasets/kitti/eval_road
 
 The kitti road dataset has 289 training images. As can be seen below from 1 example, the images are accompanied by a ground truth mapping of pixels to Road (Pink), Not Road (Red) and side road (black)
 
-![Base Image](/images/um_lane_000000.png)
-![Labelled Image](/images/um_000000.png)
-![Overlay](/images/overlay.png)
+![Base Image](/images/writeup/um_000000.png)
+![Labelled Image](/images/writeup/um_lane_000000.png)
+![Overlay](/images/writeup/overlay.png)
 
 The dataset has a test set of images as well.
 
@@ -87,7 +87,7 @@ Parameters for batch size, epochs, drop out, learning rate and other hyper-param
 
 The project walk through recommended the use of l2 regularisation. In the first instance, the model above was created without it to see what the output might be. From the image below, it can be seen that the model performs poorly where no regularisation is applied.
 
-![No regularisation](/images/bad_reg.png)
+![No regularisation](/images/writeup/bad_reg.png)
 
 
 #### Initial results
@@ -96,7 +96,7 @@ This base model (with regularisation) was then tested using various combinations
 
 Example output images can be seen below, showing reasonable if not perfect performance:
 
-![overlay testing](images/test1.png)
+![overlay testing](images/writeup/test1.png)
 
 
 #### Updating helper.py to pre-process the Kitti Road Dataset Images
@@ -107,7 +107,7 @@ I chose to simply apply image normalisation to each training image (and predicti
 
 Using this approach, training loss was reduced to 0.106. Further work would be needed here to improve performance by adding transformed images to the data set using clipping, rotation, random image enhancements such as brightness and contrast.
 
-![overlay aug]{images/test2.png)
+![overlay aug]{images/writeup/test2.png)
 
 #### Saving and Restoring the model to be run in prediction so a Video pipeline could be created
 
@@ -117,7 +117,7 @@ The function opens the saved model from the training run. It captures the logits
 
 This output is then used as the basis of the new frame.
 
-The output can be see here: [video]{/images/windy_road_output.mp4)
+The output can be see here: [video](/images/windy_road_output.mp4)
 
 #### Adapting this approach and applying it to the cityscapes dataset
 
