@@ -3,6 +3,10 @@ import random
 import numpy as np
 import os.path
 import scipy.misc
+import scipy.ndimage as ndi
+import imageio
+from skimage import exposure as ex
+import random
 import shutil
 import zipfile
 import time
@@ -10,6 +14,11 @@ import tensorflow as tf
 from glob import glob
 from urllib.request import urlretrieve
 from tqdm import tqdm
+
+
+# controllers for augmentation
+USE_AUGMENTATION = False
+USE_GAUSSIAN = False
 
 
 class DLProgress(tqdm):
@@ -58,10 +67,30 @@ def maybe_download_pretrained_vgg(data_dir):
         os.remove(os.path.join(vgg_path, vgg_filename))
 
 
-def normalise(img):
-    lmin = float(img.min())
-    lmax = float(img.max())
-    return img #np.floor((img-lmin)/(lmax-lmin)*255.)
+# apply a gaussian filter to the images
+def apply_gaussian(img):
+    if USE_GAUSSIAN:
+       img = ndi.gaussian_filter(img, sigma=random.randint(1, 4))
+    return img
+
+
+def process_gt(gt_img):
+    background_color = np.array([255, 0, 0])
+
+    gt_bg = np.all(gt_img == background_color, axis=2)
+    gt_bg = gt_bg.reshape(*gt_bg.shape, 1)
+    gt_img = np.concatenate((gt_bg, np.invert(gt_bg)), axis=2)
+
+    return gt_img
+
+
+def adjust_intensity(img, s = 1.0, m = 0.0):
+    img = img.astype(np.int)
+    img = img * s + m
+    img[img > 255] = 255
+    img[img < 0] = 0
+    img = img.astype(np.uint8)
+    return img
 
 
 def gen_batch_function(data_folder, image_shape):
@@ -81,7 +110,6 @@ def gen_batch_function(data_folder, image_shape):
         label_paths = {
             re.sub(r'_(lane|road)_', '_', os.path.basename(path)): path
             for path in glob(os.path.join(data_folder, 'gt_image_2', '*_road_*.png'))}
-        background_color = np.array([255, 0, 0])
 
         random.shuffle(image_paths)
         for batch_i in range(0, len(image_paths), batch_size):
@@ -94,12 +122,42 @@ def gen_batch_function(data_folder, image_shape):
                 gt_image = scipy.misc.imresize(scipy.misc.imread(gt_image_file), image_shape)
 
                 # normalise the image
-                image = normalise(image)
+                image = apply_gaussian(image)
 
-                gt_bg = np.all(gt_image == background_color, axis=2)
-                gt_bg = gt_bg.reshape(*gt_bg.shape, 1)
-                gt_image = np.concatenate((gt_bg, np.invert(gt_bg)), axis=2)
 
+                # augment image data set here
+                if USE_AUGMENTATION:
+                    # add in 4 new images with gamma correction
+                    img = ex.adjust_gamma(image, 0.5)
+                    gt_img = process_gt(gt_image)
+                    images.append(img)
+                    gt_images.append(gt_img)
+
+                    # add in 4 rotated images
+                    img = ndi.interpolation.rotate(image, 180)
+                    img = ex.adjust_gamma(img, 0.2)
+                    gt_img = ndi.interpolation.rotate(gt_image, 180)
+
+                    # i_shape = img.shape
+                    # img = tr.resize(img_rotate, (i_shape[0], i_shape[1]), mode='reflect')
+                    # gt_img_rotate = tr.resize(gt_img_rotate, (i_shape[0], i_shape[1]), mode='reflect')
+                    gt_img = process_gt(gt_img)
+
+                    images.append(img)
+                    gt_images.append(gt_img)
+
+                    # flip and image
+                    img = np.fliplr(image)
+                    gt_img = np.fliplr(gt_image)
+
+                    # adjust gamma and add in
+                    img = ex.adjust_gamma(img, 0.4)
+
+                    gt_img = process_gt(gt_img)
+                    images.append(img)
+                    gt_images.append(gt_img)
+
+                gt_image = process_gt(gt_image)
                 images.append(image)
                 gt_images.append(gt_image)
 
@@ -122,7 +180,7 @@ def gen_test_output(sess, logits, keep_prob, image_pl, data_folder, image_shape)
         image = scipy.misc.imresize(scipy.misc.imread(image_file), image_shape)
 
         # should pre-process as per training
-        image_norm = normalise(image)
+        image_norm = apply_gaussian(image)
 
         im_softmax = sess.run(
             [tf.nn.softmax(logits)],

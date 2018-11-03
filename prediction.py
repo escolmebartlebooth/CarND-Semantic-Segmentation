@@ -5,7 +5,7 @@ import shutil
 import tensorflow as tf
 from tensorflow.python.tools.inspect_checkpoint import print_tensors_in_checkpoint_file
 from moviepy.editor import VideoFileClip
-from helper import normalise
+import helper
 
 
 RUN_VIDEO = True
@@ -13,7 +13,7 @@ RUN_VIDEO = True
 def pipeline(img):
     img = scipy.misc.imresize(img, image_shape)
 
-    img_norm = normalise(img)
+    img_norm = apply_gaussian(img)
 
     im_softmax = sess.run([tf.nn.softmax(logits)], {keep_prob: 1.0, image_pl: [img_norm]})
     im_softmax = im_softmax[0][:, 1].reshape(image_shape[0], image_shape[1])

@@ -7,12 +7,12 @@ from distutils.version import LooseVersion
 import project_tests as tests
 
 # set some hyper-parameters up here
-LEARN_RATE = 5e-4
+LEARN_RATE = 1e-3
 KEEP_PROB = 0.5
 L2_REG = 1e-5
 INIT_STD = 1e-2
-BATCH_SIZE = 8
-EPOCHS = 50
+BATCH_SIZE = 12
+EPOCHS = 2
 
 # Check TensorFlow Version
 assert LooseVersion(tf.__version__) >= LooseVersion('1.0'), 'Please use TensorFlow version 1.0 or newer.  You are using {}'.format(tf.__version__)
@@ -119,7 +119,10 @@ def optimize(nn_last_layer, correct_label, learning_rate, num_classes):
     x_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=labels)) + sum(reg_losses)
     train_op = tf.train.AdamOptimizer(learning_rate).minimize(x_entropy)
 
-    return logits, train_op, x_entropy
+    # define iou metric
+    #iou, iou_op = tf.metrics.mean_iou(labels, logits, num_classes)
+
+    return logits, train_op, x_entropy #, iou, iou_op
 tests.test_optimize(optimize)
 
 
@@ -184,8 +187,11 @@ def run():
         # TODO: Train NN using the train_nn function
         tf.set_random_seed(42)
         sess.run(tf.global_variables_initializer())
+        sess.run(tf.local_variables_initializer())
         saver = tf.train.Saver()
         train_nn(sess, EPOCHS, BATCH_SIZE, get_batches_fn, train_op, x_entropy, input_image, correct_label, keep_prob, learning_rate)
+        #sess.run(iou_op)
+        #print("training run iou: ".format(sess.run(iou)))
         saver.save(sess, 'model/bartlebooth-fcn')
 
         # TODO: Save inference data using helper.save_inference_samples
