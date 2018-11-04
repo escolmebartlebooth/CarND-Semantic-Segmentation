@@ -103,7 +103,18 @@ Example output images can be seen below, showing reasonable if not perfect perfo
 
 The first optional task was to use data augmentation techniques to improve network performance. This could have taken the form of adding transformed training images to broaden the training set, which was quite small.
 
-I chose to simply apply image normalisation to each training image (and prediction image). This can be seen in helper.py (although it is commented out in this version).
+I referred to https://arxiv.org/pdf/1704.06857.pdf which contained a brief overview of augmentation and pre-processing steps for fully convolutional networks.
+
+From this work i chose to trial adding images:
+* had a gamma correction of 0.5
+* were rotated by 180 degrees
+* were flipped
+
+This added 3 x the number of original training images to the dataset.
+
+I also experimented with applying a gaussian function over all the base images.
+
+The use of USE_GAUSSIAN and USE_AUGMENTATION flags in helper.py control whether either or both settings are used. The increase in data size meant that with the 11GB GPU i was using, i could only operate with a batch size of 4 and training time increased considerably.
 
 Using this approach, training loss was reduced to 0.106. Further work would be needed here to improve performance by adding transformed images to the data set using clipping, rotation, random image enhancements such as brightness and contrast.
 
@@ -134,12 +145,13 @@ run ```prediction.py``` to process the video output or a single image (you will 
 
 ### Improvements
 
-Augmentation: The low number of training samples
+Augmentation: Better experiments and more randomised augmentation (as per the https://arxiv.org/pdf/1704.06857.pdf paper) should lead to better generalisation.
 
-Greater Hyper-Parameter Tuning
+Using a validation set could improve network performance on unseen images.
 
-Optimisation for inference
+More time tuning Hyper-Parameters could lead to better performance as could implementing mean_iou to gauge the success of a particular model.
 
+Optimisation for inference was not used in this attempt but the techniques taught in the classroom would be useful in reducing the size of the model used for inference.
 
 ### Notes from the original Udacity README
 
