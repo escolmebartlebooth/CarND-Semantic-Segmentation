@@ -12,7 +12,7 @@ KEEP_PROB = 0.5
 L2_REG = 1e-5
 INIT_STD = 1e-2
 BATCH_SIZE = 12
-EPOCHS = 2
+EPOCHS = 10
 
 # Check TensorFlow Version
 assert LooseVersion(tf.__version__) >= LooseVersion('1.0'), 'Please use TensorFlow version 1.0 or newer.  You are using {}'.format(tf.__version__)
