@@ -2,13 +2,15 @@
 
 Author: David Escolme
 
-Date of Version: 28 October 2018
+Date of Version: 07 November 2018
 
 Version Log:
 
 * 22 October: Draft
 * 27 October: Exploration and Code Walk through
 * 28 October: Added references
+* 07 November: Finalised for 1st submission
+
 
 ### Objectives
 
@@ -93,7 +95,7 @@ The project walk through recommended the use of l2 regularisation. In the first 
 
 #### Initial results
 
-This base model (with regularisation) was then tested using various combinations of the hyper-parameters. After a limited amount of tuning, the best model loss achieved was 0.128 with 50 epochs, drop out of 0.5, a batch size of 8 and a learning rate of 5E-5.
+This base model (with regularisation) was then tested using various combinations of the hyper-parameters. After a limited amount of tuning, the best model loss achieved was 0.128 with 50 epochs, drop out of 0.5, a batch size of 8 and a learning rate of 5E-5. It should also be noted that to run a batch size of more than 4 required a GPU of 11GB (at least a GPU instance > 3GB)
 
 Example output images can be seen below, showing reasonable if not perfect performance:
 
@@ -132,8 +134,12 @@ The output video is contained in the ./images/writeup folder
 
 #### Adapting this approach and applying it to the cityscapes dataset
 
-The final optional task was to adapt the model to work on the cityscapes dataset. This...
+The final optional task was to adapt the model to work on the cityscapes dataset. This was not attempted due to time constraints. To complete this task i think i would have had to:
 
+* adjust the base model to allow for the full number of classes (11?) on the dataset
+* balanced the training data so that each class was represented a relatively even number of times across the input images (this would be achieved by using similar augmentation techniques as discussed above)
+* a different approach to ground truth processing would have been needed as the ground truth was not binary
+* a much larger processing capacity would have been required as the model parameters would have increased due to the increase in classes
 
 #### Modes of operation
 
